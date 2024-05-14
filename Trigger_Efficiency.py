@@ -2,7 +2,7 @@ import ROOT
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('/user/achoban/LHCb_Xic_production/analysis/Scripts/')
+sys.path.append('/user/achoban/LHCb_Xic_production-1/analysis/Scripts/')
 import Imports
 import os
 TRIGGER_EFFICIENCIES_PATH = Imports.TRIGGER_EFFICIENCIES_PATH
