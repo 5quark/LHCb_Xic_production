@@ -7,6 +7,8 @@ TABLE_PATH = WORKING_DIR + "Tables/"
 OUTPUT_DICT_PATH = WORKING_DIR + "Dict_output/"
 SWEIGHTS_PATH = WORKING_DIR + "sWeights/"
 DALTIZ_PATH = WORKING_DIR + "dalitz/"
+TRIGGER_EFFICIENCIES_PATH= WORKING_DIR +"Trigger_Efficiencies/"
+
 
 #Important! When we decide the fate of Turbo/Stripping/ etc. These HLT2 checks must be tidied up
 
@@ -154,3 +156,61 @@ def getMC(year,polarity, particle,cuts=True):
 		
 
 
+#This function returns bins with equal number of events in each bin
+#file_path is the path to the .root file
+#branchname is the branch you want to bin 
+#n_bins is the number of bins 
+#range_list is the range you want to consider [min, max]
+def get_bins(file_path,branchname, n_bins,range_list):   
+
+    root_file = ROOT.TFile.Open(file_path)
+    # Check if the file is opened successfully
+    if not root_file or root_file.IsZombie():
+        print("Error: Could not open the ROOT file.")
+        return
+
+    tree_name = "DecayTree"
+    tree = root_file.Get(tree_name)
+    if tree:
+        print(f"\nTree '{tree_name}' has {tree.GetEntries()} entries.")
+    else:
+        print(f"\nError: Tree '{tree_name}' not found in the ROOT file.")
+
+    branch_list = tree.GetListOfBranches()
+    for branch in branch_list:
+        branch_name = branch.GetName()
+        if branch_name == branchname:
+            chosen_branch = branch
+        if branch_name=="lcplus_L0HadronDecision_TOS":
+            tos_hadron_branch =branch
+            print("tos hadron ")
+        if branch_name=="lcplus_L0Global_TIS":
+            tis_global_branch =branch
+            print("tis global")
+
+    pt_list=[]
+    tistos_list=[]
+    
+    for i in range(tree.GetEntries()):
+        chosen_branch.GetEntry(i)
+        value_chosen_branch = getattr(tree, chosen_branch.GetName())
+        
+        if range_list[0]< value_chosen_branch< range_list[1]:
+            pt_list.append(value_chosen_branch)
+            
+            tis_global_branch.GetEntry(i)
+            value_tis_global = getattr(tree, tis_global_branch.GetName())
+            tos_hadron_branch.GetEntry(i)
+            value_tos_hadron = getattr(tree, tos_hadron_branch.GetName())    
+
+            if value_tos_hadron==1 and value_tis_global == 1:
+                tistos_list.append(value_chosen_branch)
+        
+    sorted_data=np.sort(tistos_list)
+    quantiles = np.linspace(0, 100, n_bins + 1)  
+    bin_edges = np.percentile(sorted_data, quantiles)  
+
+    hist, bins = np.histogram(tistos_list, bins=bin_edges)
+    for i in range(len(hist)):
+        print(f"Bin {i+1} (from {bins[i]:.2f} to {bins[i+1]:.2f}): {hist[i]} events")
+    return bins

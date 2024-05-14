@@ -5,10 +5,10 @@ import sys
 sys.path.append('/user/achoban/LHCb_Xic_production/analysis/Scripts/')
 import Imports
 import os
-
+TRIGGER_EFFICIENCIES_PATH = Imports.TRIGGER_EFFICIENCIES_PATH
 
 #The function calculates the trigger efficiencies for each bin in 2 axis.
-def tistos(file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,branchname_2 ):
+def tistos(year,polarity,particle,file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,branchname_2 ):
 
     root_file = ROOT.TFile.Open(file_path)
 
@@ -126,8 +126,8 @@ def tistos(file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,br
     print("Hlt1_efficiency: N_passed_hlt1/N_L0Global_Dec", Hlt1_efficiency_L0)
     #if you want to save it to the .root file a_named = ROOT.TNamed("variable_a", "a", 1.24) and then a_named.Write()
     
-    np.savez("hlt1_hlt2_efficiencies.npz",
-     Hlt2_efficiency_all=Hlt2_efficiency_all,
+    np.savez(TRIGGER_EFFICIENCIES_PATH+f"hlt1_hlt2_efficiencies{year}_{polarity}_{particle}.npz",
+    Hlt2_efficiency_all=Hlt2_efficiency_all,
     Hlt2_efficiency_L0 = Hlt2_efficiency_L0,
     Hlt2_efficiency_Hlt1 = Hlt2_efficiency_Hlt1,
     Hlt1_efficiency_all = Hlt1_efficiency_all,
@@ -167,7 +167,7 @@ def tistos(file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,br
     hist_ratio_tistos_true.SetStats(0)
 
     hist_ratio_tistos_true.Draw("colztext")
-    canvas_true_tistos.SaveAs("hist_ratio_true_tistos.eps")
+    canvas_true_tistos.SaveAs(TRIGGER_EFFICIENCIES_PATH+"hist_ratio_true_tistos.eps")
     canvas_true_tistos.Close()
     
     # Number of TISTOS events
@@ -177,7 +177,7 @@ def tistos(file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,br
     hist_tistos.GetYaxis().SetTitle("Eta")
     hist_tistos.SetStats(0)
     hist_tistos.Draw("colztext")
-    canvas_tistos.SaveAs("hist_number_of_tistos.eps")
+    canvas_tistos.SaveAs(TRIGGER_EFFICIENCIES_PATH+"hist_number_of_tistos.eps")
     canvas_tistos.Close()
     
     #Number of All events
@@ -187,21 +187,21 @@ def tistos(file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,br
     hist_all.GetYaxis().SetTitle("Eta")
     hist_all.SetStats(0)
     hist_all.Draw("colztext")
-    canvas_all.SaveAs("hist_number_of_all.eps")
+    canvas_all.SaveAs(TRIGGER_EFFICIENCIES_PATH+"hist_number_of_all.eps")
     canvas_all.Close()
 
     #True Efficiency
     canvas_true_efficiency = ROOT.TCanvas("hist_true_efficiency", "hist_true_efficiency", 1600, 1200)
     true_efficiency.SetTitle("True Efficiency")
     true_efficiency.Draw("colztext")
-    canvas_true_efficiency.SaveAs("hist_true_efficiency.eps")
+    canvas_true_efficiency.SaveAs(TRIGGER_EFFICIENCIES_PATH+"hist_true_efficiency.eps")
     canvas_true_efficiency.Close()
 
     #TISTOS Efficiency
     canvas_tistos_efficiency = ROOT.TCanvas("hist_tistos_efficiency", "hist_tistos_efficiency", 1600, 1200)
     tistos_efficiency.SetTitle("TISTOS Efficiency")
     tistos_efficiency.Draw("colztext")
-    canvas_tistos_efficiency.SaveAs("hist_tistos_efficiency.eps")
+    canvas_tistos_efficiency.SaveAs(TRIGGER_EFFICIENCIES_PATH+"hist_tistos_efficiency.eps")
     canvas_tistos_efficiency.Close()
 
 
@@ -209,7 +209,7 @@ def tistos(file_path, bins_chosen_branch_1,branchname_1, bins_chosen_branch_2,br
 
 
     #save the TEfficiency object
-    output_file = ROOT.TFile("myfile.root", "recreate")
+    output_file = ROOT.TFile(TRIGGER_EFFICIENCIES_PATH+f"myfile{year}_{polarity}_{particle}.root", "recreate")
     tistos_efficiency.Write()
     true_efficiency.Write()
     output_file.Close()
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     bins_chosen_branch2 = Imports.get_bins(file_path, branch_name2, num_bins2, range_list2)
     
     #run the function
-    tistos(file_path, bins_chosen_branch1, branch_name1,bins_chosen_branch2, branch_name2)
+    tistos(year,polarity,particle,file_path, bins_chosen_branch1, branch_name1,bins_chosen_branch2, branch_name2)
     
     print(branch_name1," and ", branch_name2, " done ")
 
