@@ -1,3 +1,6 @@
+import ROOT
+import numpy as np
+
 TUPLE_PATH = "/dcache/bfys/jtjepkem/binned_files/"
 TUPLE_PATH_NOTRIG = "/dcache/bfys/jtjepkem/binned_files_noTrig/"
 RAW_TUPLE_PATH = "/dcache/bfys/jdevries/ntuples/LcAnalysis/ganga/"
@@ -24,7 +27,7 @@ def getMCCuts(particle, run):
 
 def getDataCuts(run, trig = True):
 	cuts = "lcplus_P < 300000 && lcplus_OWNPV_CHI2 < 80 && pplus_ProbNNp > 0.5 && kminus_ProbNNk > 0.4 && piplus_ProbNNpi > 0.5 && pplus_P < 120000 && kminus_P < 115000 && piplus_P < 80000 && pplus_PIDp > 0 && kminus_PIDK > 0"
-	
+	return cuts
 	if run == 1:
 		if trig:
 			trigger_cuts = "lcplus_L0HadronDecision_TOS == 1 && lcplus_Hlt1TrackAllL0Decision_TOS == 1 && lcplus_Hlt2CharmHadD2HHHDecision_TOS == 1"
@@ -71,6 +74,8 @@ DATA_jobs_Dict = {
 	#"NA":["2016_MagDown",],
 	"163":["2017_MagDown",1875],
 	#"NA":["2018_MagDown",],
+	"54":["2011_MagDown",1234567],
+	"56":["2012_MagDown",12345678]
 	}
 
 MC_jobs_Dict = {
@@ -152,5 +157,65 @@ def getMC(year,polarity, particle,cuts=True):
 
 	return MC_tree
 		
+
+
+#This function returns bins with equal number of events in each bin
+#file_path is the path to the .root file
+#branchname is the branch you want to bin 
+#n_bins is the number of bins 
+#range_list is the range you want to consider [min, max]
+def get_bins(file_path,branchname, n_bins,range_list):   
+
+    root_file = ROOT.TFile.Open(file_path)
+    # Check if the file is opened successfully
+    if not root_file or root_file.IsZombie():
+        print("Error: Could not open the ROOT file.")
+        return
+
+    tree_name = "DecayTree"
+    tree = root_file.Get(tree_name)
+    if tree:
+        print(f"\nTree '{tree_name}' has {tree.GetEntries()} entries.")
+    else:
+        print(f"\nError: Tree '{tree_name}' not found in the ROOT file.")
+
+    branch_list = tree.GetListOfBranches()
+    for branch in branch_list:
+        branch_name = branch.GetName()
+        if branch_name == branchname:
+            chosen_branch = branch
+        if branch_name=="lcplus_L0HadronDecision_TOS":
+            tos_hadron_branch =branch
+            print("tos hadron ")
+        if branch_name=="lcplus_L0Global_TIS":
+            tis_global_branch =branch
+            print("tis global")
+
+    pt_list=[]
+    tistos_list=[]
+    
+    for i in range(tree.GetEntries()):
+        chosen_branch.GetEntry(i)
+        value_chosen_branch = getattr(tree, chosen_branch.GetName())
+        
+        if range_list[0]< value_chosen_branch< range_list[1]:
+            pt_list.append(value_chosen_branch)
+            
+            tis_global_branch.GetEntry(i)
+            value_tis_global = getattr(tree, tis_global_branch.GetName())
+            tos_hadron_branch.GetEntry(i)
+            value_tos_hadron = getattr(tree, tos_hadron_branch.GetName())    
+
+            if value_tos_hadron==1 and value_tis_global == 1:
+                tistos_list.append(value_chosen_branch)
+        
+    sorted_data=np.sort(tistos_list)
+    quantiles = np.linspace(0, 100, n_bins + 1)  
+    bin_edges = np.percentile(sorted_data, quantiles)  
+
+    hist, bins = np.histogram(tistos_list, bins=bin_edges)
+    for i in range(len(hist)):
+        print(f"Bin {i+1} (from {bins[i]:.2f} to {bins[i+1]:.2f}): {hist[i]} events")
+    return bins
 
 
